@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VocalCheck</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/reset.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="/js/jquery191.min.js"></script>
+    <script src="/js/dragNdrop.js"></script>
+</head>
+<body>
+<main>
+    <nav style="height: 12vh">
+        <div style="padding-top: 2vh" class="nav-wrapper  blue darken-4">
+            <a href="#" data-target="mobile-demo" class="sidenav-trigger"><i style="font-size: calc(3em + 3vw);" class="material-icons">menu</i></a>
+            <ul class="right hide-on-med-and-down">
+                <li><a th:text="#{option-gender}" href="gender"></a></li>
+                <li><a th:text="#{option-history}" href="history"></a></li>
+                <li><a th:text="#{option-logout}" href="logout"></a></li>
+            </ul>
+            <div class="left sidenav-trigger hide-on-med-and-down">
+                <a href="?localeData=pl"><img th:alt="#{switch-pl}" src="/img/poland.png"></a>
+                <a href="?localeData=en"><img th:alt="#{switch-en}" src="/img/united-kingdom.png"></a>
+            </div>
+            <a href="/" class="brand-logo center">VocalCheck</a>
+        </div>
+    </nav>
+    <ul style="width: 50%" class="sidenav" id="mobile-demo">
+        <li class="side-li"><a th:text="#{option-gender}" href="gender"></a></li>
+        <li class="side-li"><a th:text="#{option-history}" href="history"></a></li>
+        <li class="side-li"><a th:text="#{option-logout}" href="logout"></a></li>
+        <li><a href="?localeData=pl"><img th:alt="#{switch-pl}" src="/img/poland.png"></a><a href="?localeData=en"><img th:alt="#{switch-en}" src="/img/united-kingdom.png"></a></li>
+    </ul>
+    <div class="container">
+        <div class="row center">
+            <div id="record-container" class="col s12 card medium z-depth-3"
+                 style="background-color: #4f5e82; height: 50vh">
+                <div class="card-content white-text">
+                    <span class="card-title" th:text="#{live-recording}">Nagraj głos na żywo</span>
+                        <p th:text="#{live-recording2}">Wykonaj 5 sekundową fonację głoski /a/</p>
+                        <p th:text="#{live-recording3}">Rozpocznij fonację przed włączeniem nagrywania, żeby mieć pewność, że nagrany głos będzie jednolity</p>
+                    <div class="center-inside">
+                        <div class="vertical-center">
+                            <div class="waveform"></div>
+                            <div class="audio-recording-container">
+                                <i class="start-recording-button responsive-icon material-icons" aria-hidden="true">mic</i>
+                                <div class="recording-control-buttons-container hide">
+                                    <i class="cancel-recording-button medium material-icons" aria-hidden="true">cancel</i>
+                                    <div class="recording-elapsed-time">
+                                        <i class="red-recording-dot small material-icons"
+                                           aria-hidden="true">brightness_1</i>
+                                        <p class="elapsed-time"></p>
+                                    </div>
+                                    <i class="stop-recording-button medium material-icons"
+                                       aria-hidden="true">check_circle</i>
+                                </div>
+                                <div class="text-indication-of-audio-playing-container">
+                                    <p class="text-indication-of-audio-playing hide">Audio is
+                                        playing<span>.</span><span>.</span><span>.</span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <audio controls class="audio-element hide">
+                        </audio>
+                        <script>
+                            const currentLocale = "[[${#locale}]]";
+                        </script>
+                        <script type="module" src="/js/audioAPI.js"></script>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="loading-card" class="overlay-div row center hide">
+            <div class="col s12 card small z-depth-4 center-inside" style="background-color: #f1f0f7; height: 40vh">
+                <div class="card-content center vertical-center">
+                    <div class="preloader-wrapper big active">
+                        <div class="spinner-layer spinner-blue-only">
+                            <div class="circle-clipper left">
+                                <div class="circle"></div>
+                            </div>
+                            <div class="gap-patch">
+                                <div class="circle"></div>
+                            </div>
+                            <div class="circle-clipper right">
+                                <div class="circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <p th:text="#{calculating-results}">Obliczanie wyników...</p>
+                </div>
+            </div>
+        </div>
+        <div id="error-card" class="overlay-div row">
+            <div class="col offset-s3 s6 card small z-depth-4 center-inside" style="background-color: #FF5449; height: 60vh">
+                <h3 th:text="#{error-popup-header}" class="white-text"><b>Błąd!</b></h3>
+                <div class="card-content center vertical-center white-text">
+                    <div class="card-panel black-text" style="background-color: #f1f0f7">
+                        <h6 id="error-card-text">Nieznany błąd, sprawdź stan mikrofonu i odśwież stronę</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row center">
+            <h2 th:text="#{main-page-or}"><b>LUB</b></h2>
+        </div>
+        <div id="upload-area" class="row center" ondrop="uploadFile(event);" ondragover="dragOverHandler(event);"
+             ondragleave="leaveHover(event)">
+            <div id="drop-card" class="col s12 card medium z-depth-3" style="background-color: #4f5e82; height: 40vh">
+                <div class="card-content white-text">
+                    <span class="card-title" th:text="#{wav-file}"></span>
+                    <div id="drop-zone" class="drop-zone center-inside">
+                        <form action="/upload" method="post" class="drop-zone needs-click vertical-center"
+                              id="voice-upload" enctype="multipart/form-data">
+                            <i class="responsive-icon material-icons">file_upload</i>
+                        </form>
+                    </div>
+                </div>
+                <div class="card-action" style="background-color: #8890A8">
+                    <div class="dz-message needs-click" ondrop="uploadFile(event);" ondragover="dragOverHandler(event);"
+                         ondragleave="leaveHover(event)">
+                        <input form="voice-upload" class="white-text" id="file-input" type="file" accept="audio/wav"
+                               ondrop="uploadFile(event);" ondragover="dragOverHandler(event);"
+                               ondragleave="leaveHover(event)" onchange="submitForm(event)" name="file">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<footer class="page-footer blue darken-4">
+    <div class="container">
+        <div class="footer-copyright">
+            <div class="container">
+                <span th:text="#{copyright}"></span>
+                <a th:text="#{pjatk-link}" class="grey-text text-lighten-4 right" href="https://pja.edu.pl/"></a>
+            </div>
+        </div>
+    </div>
+</footer>
+<script src="/js/enabler.js" type="module"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('.sidenav').sidenav();
+    });
+</script>
+</body>
+</html>

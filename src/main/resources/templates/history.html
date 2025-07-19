@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VocalCheck - results</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/reset.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="/js/jquery191.min.js"></script>
+</head>
+<body>
+<main>
+    <nav style="height: 12vh">
+        <div style="padding-top: 2vh" class="nav-wrapper  blue darken-4">
+            <a href="#" data-target="mobile-demo" class="sidenav-trigger"><i style="font-size: calc(3em + 3vw);" class="material-icons">menu</i></a>
+            <ul class="right hide-on-med-and-down">
+                <li><a th:text="#{option-gender}" href="gender"></a></li>
+                <li><a th:text="#{option-logout}" href="logout"></a></li>
+            </ul>
+            <div class="left sidenav-trigger hide-on-med-and-down">
+                <a href="?localeData=pl"><img th:alt="#{switch-pl}" src="/img/poland.png"></a>
+                <a href="?localeData=en"><img th:alt="#{switch-en}" src="/img/united-kingdom.png"></a>
+            </div>
+            <a href="/" class="brand-logo center">VocalCheck</a>
+        </div>
+    </nav>
+    <ul style="width: 50%" class="sidenav" id="mobile-demo">
+        <li class="side-li"><a href="/">Strona główna</a></li>
+        <li class="side-li"><a th:text="#{option-gender}" href="gender"></a></li>
+        <li class="side-li"><a th:text="#{option-logout}" href="logout"></a></li>
+        <li><a href="?localeData=pl"><img th:alt="#{switch-pl}" src="/img/poland.png"></a><a href="?localeData=en"><img th:alt="#{switch-en}" src="/img/united-kingdom.png"></a></li>
+    </ul>
+    <div class="container">
+        <table id="history-table" class="centered">
+            <div th:if="${vocalTestResults == null}" class="card-content" style="text-align: center;">
+                <span class="card-title" th:text="#{empty-history}">Brak historii wyników. Przeprowadź test głosu, a jego wyniki będą tu widoczne.</span>
+            </div>
+
+            <thead th:unless="${vocalTestResults == null}">
+            <tr>
+                <th>Peak Slope</th>
+                <th>Cepstral Peak Prominence</th>
+                <th>Normalized Amplitude Quotient</th>
+                <th th:text="#{result-date}">Data Badania</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:each="result: ${vocalTestResults}">
+                <td th:classappend="${result.ps.replace(',', '.')} > ${psMax}? 'breathy' : (${result.ps.replace(',', '.')} < ${psMin}? 'tense' : 'good')" th:text="${result.ps}"></td>
+                <td th:classappend="${result.cpp.replace(',', '.')} < ${cppMin}? 'good' : 'tense'" th:text="${result.cpp}"></td>
+                <td th:classappend="${result.naq.replace(',', '.')} > ${naqMax}? 'breathy' : (${result.naq.replace(',', '.')} < ${naqMin}? 'tense' : 'good')" th:text="${result.naq}"></td>
+                <td th:text="${result.date}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+<footer class="page-footer blue darken-4">
+    <div class="container">
+        <div class="footer-copyright">
+            <div class="container">
+                <span th:text="#{copyright}"></span>
+                <a th:text="#{pjatk-link}" class="grey-text text-lighten-4 right" href="https://pja.edu.pl/"></a>
+            </div>
+        </div>
+    </div>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('.sidenav').sidenav();
+    });
+</script>
+<script>
+    function addRowHandlers() {
+        var table = document.getElementById("history-table");
+        var rows = table.getElementsByTagName("tr");
+        for (i = 0; i < rows.length; i++) {
+            var currentRow = table.rows[i];
+            var createClickHandler = function(row) {
+                return function() {
+                    var ps = row.getElementsByTagName("td")[0].innerHTML.replaceAll(',', '.');
+                    var cpp = row.getElementsByTagName("td")[1].innerHTML.replaceAll(',', '.');
+                    var naq = row.getElementsByTagName("td")[2].innerHTML.replaceAll(',', '.');
+                    window.location.href = `${window.location.origin}/result?cpp=${cpp}&naq=${naq}&ps=${ps}`;
+                };
+            };
+            currentRow.onclick = createClickHandler(currentRow);
+        }
+    }
+    window.onload = addRowHandlers();
+</script>
+</body>
+</html>

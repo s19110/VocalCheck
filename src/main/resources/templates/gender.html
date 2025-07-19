@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VocalCheck - Wizualizacja</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/reset.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="/js/jquery191.min.js"></script>
+</head>
+<body>
+<main>
+    <div id="width-p" th:text="${width_p}" hidden>0.8</div>
+    <div id="height-p" th:text="${height_p}" hidden>0.2</div>
+    <div id="height-p2" th:text="${height_p2}" hidden>0.2</div>
+    <nav style="height: 12vh">
+        <div style="padding-top: 2vh" class="nav-wrapper  blue darken-4">
+            <a href="#" data-target="mobile-demo" class="sidenav-trigger"><i style="font-size: calc(3em + 3vw);" class="material-icons">menu</i></a>
+            <ul class="right hide-on-med-and-down">
+                <li><a th:text="#{option-history}" href="history"></a></li>
+                <li><a th:text="#{option-logout}" href="logout"></a></li>
+            </ul>
+            <div class="left sidenav-trigger hide-on-med-and-down">
+                <a href="?localeData=pl"><img th:alt="#{switch-pl}" src="/img/poland.png"></a>
+                <a href="?localeData=en"><img th:alt="#{switch-en}" src="/img/united-kingdom.png"></a>
+            </div>
+            <a href="/" class="brand-logo center">VocalCheck</a>
+        </div>
+    </nav>
+    <ul style="width: 50%" class="sidenav" id="mobile-demo">
+        <li class="side-li"><a href="/">Strona główna</a></li>
+        <li class="side-li"><a th:text="#{option-history}" href="history"></a></li>
+        <li class="side-li"><a th:text="#{option-logout}" href="logout"></a></li>
+        <li><a href="?localeData=pl"><img th:alt="#{switch-pl}" src="/img/poland.png"></a><a href="?localeData=en"><img th:alt="#{switch-en}" src="/img/united-kingdom.png"></a></li>
+    </ul>
+    <div class="row center">
+        <span th:text="#{choose-sex}" class="card-title">Wybór płci</span>
+        <div class="card-content">
+            <p th:text="#{choose-sex-desc}">Zakresy zdrowych wartości parametrów głosu są uzależnione od płci. Wybierz swoją płeć biologiczną w celu zapewnienia trafności wyników.</p>
+            <p>
+                <span th:text="#{choose-sex-selection}">Aktualnie ustawiona płeć:</span>
+                <strong style="font-weight: bolder" th:text="#{${currentGender}}"></strong>
+            </p>
+        </div>
+    </div>
+    <div class="container">
+        <div class="row center">
+            <form action="/gender" method="post">
+            <div class="col s6">
+                <div class="card-panel white-text" style="background-color: #4f5e82; height: 35vh;">
+                    <button class="card-panel black-text blue lighten-4 center-inside waves-effect waves-light btn" type="submit" name="gender" value="man" style="height: 25vh;">
+                        <i style="font-size: calc(3em + 3vw);" class="material-icons">man</i>
+                    </button>
+                </div>
+            </div>
+            <div class="col s6">
+                <div class="card-panel white-text" style="background-color: #4f5e82; height: 35vh;">
+                    <button class="card-panel black-text pink lighten-4 center-inside waves-effect waves-light btn" type="submit" name="gender" value="woman" style="height: 25vh;">
+                        <i style="font-size: calc(3em + 3vw);" class="material-icons">woman</i>
+                    </button>
+                </div>
+            </div>
+            </form>
+        </div>
+    </div>
+</main>
+<footer class="page-footer blue darken-4">
+    <div class="container">
+        <div class="footer-copyright">
+            <div class="container">
+                <span th:text="#{copyright}"></span>
+                <a th:text="#{pjatk-link}" class="grey-text text-lighten-4 right" href="https://pja.edu.pl/"></a>
+            </div>
+        </div>
+    </div>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('.sidenav').sidenav();
+    });
+</script>
+</body>
+</html>

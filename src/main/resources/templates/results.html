@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VocalCheck - results</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/reset.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="/js/jquery191.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+<main>
+    <img src="/img/wizualizacja1.jpg" hidden alt="Wizualizacja typu głosu">
+    <img src="/img/wizualizacja2.jpg" hidden alt="Wizualizacja dysfonii">
+    <nav style="height: 12vh">
+        <div style="padding-top: 2vh" class="nav-wrapper  blue darken-4">
+            <a href="#" data-target="mobile-demo" class="sidenav-trigger"><i style="font-size: calc(3em + 3vw);" class="material-icons">menu</i></a>
+            <ul class="right hide-on-med-and-down">
+                <li><a th:text="#{option-gender}" href="gender"></a></li>
+                <li><a th:text="#{option-history}" href="history"></a></li>
+                <li><a th:text="#{option-logout}" href="logout"></a></li>
+            </ul>
+            <div class="left sidenav-trigger hide-on-med-and-down">
+                <a href="#" onclick="redirectWithParam('localeData', 'pl')"><img th:alt="#{switch-pl}" src="/img/poland.png"></a>
+                <a href="#" onclick="redirectWithParam('localeData', 'en')"><img th:alt="#{switch-en}" src="/img/united-kingdom.png"></a>
+            </div>
+            <a href="/" class="brand-logo center">VocalCheck</a>
+        </div>
+    </nav>
+    <ul style="width: 50%" class="sidenav" id="mobile-demo">
+        <li><a th:text="#{option-gender}" href="gender"></a></li>
+        <li class="side-li"><a th:text="#{option-gender}" href="gender"></a></li>
+        <li class="side-li"><a th:text="#{option-history}" href="history"></a></li>
+        <li class="side-li"><a th:text="#{option-logout}" href="logout"></a></li>
+        <li><a href="?localeData=pl"><img th:alt="#{switch-pl}" src="/img/poland.png"></a><a href="?localeData=en"><img th:alt="#{switch-en}" src="/img/united-kingdom.png"></a></li>
+    </ul>
+
+    <div id="x" th:text="${x}" hidden>0.8</div>
+    <div id="y" th:text="${y}" hidden>0.2</div>
+    <div id="z" th:text="${z}" hidden>0.2</div>
+    <div id="details" class="container" style="height: 20vh; opacity: 0">
+        <div class="row center">
+            <div class="col s4">
+                <div class="card-panel white-text" style="background-color: #4f5e82; height: 20vh;">
+                    <h2 style="font-size: calc(0.5em + 1vw);margin: 0;">PS</h2>
+                    <div class="card-panel black-text" th:style="'background-color: '+${psColor}+';padding-left: 0;padding-right: 0;'">
+                        <h3 id="ps-value" style="font-size: calc(0.5em + 1vw)" th:text="${PS}"></h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col s4">
+                <div class="card-panel white-text" style="background-color: #4f5e82; height: 20vh;">
+                    <h2 style="font-size:calc(0.5em + 1vw);margin: 0;">CPP</h2>
+                    <div class="card-panel black-text" th:style="'background-color: '+${cppColor}+';padding-left: 0;padding-right: 0;'">
+                        <h3 id="cpp-value" style="font-size: calc(0.5em + 1vw)" th:text="${CPP}"></h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col s4">
+                <div class="card-panel white-text" style="background-color: #4f5e82; height: 20vh;">
+                    <h2 style="font-size: calc(0.5em + 1vw);margin: 0;">NAQ</h2>
+                    <div class="card-panel black-text" th:style="'background-color: '+${naqColor}+';padding-left: 0;padding-right: 0;'">
+                        <h3 id="naq-value" style="font-size: calc(0.5em + 1vw);" th:text="${NAQ}"></h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <div class="row center">
+            <div class="col s12">
+                <div id="wizualizacja-div" class="card-panel white-text" style="background-color: #4f5e82;">
+                    <h2 th:text="#{${verdict}}" th:style="'font-size: calc(1em + 2vw); color: '+${vedictColor}+';'">Peak Slope</h2>
+                    <h2 th:text="#{${disphonia}}" th:style="'font-size: calc(1em + 2vw); color: '+${disphoniaColor}+';'">Peak Slope</h2>
+                    <div id=canvas style="height: 50vh;margin:auto;"></div>
+                    <script id="renderer.js" type="module">
+
+                        // Obtain the x,y,z coordinates
+                        const xCoord = Number(document.getElementById('x').innerHTML)
+                        const yCoord = Number(document.getElementById('y').innerHTML)
+                        const zCoord = Number(document.getElementById('z').innerHTML)
+                        console.log("x: " + xCoord + " y: " + yCoord + " z: " + zCoord)
+                        // Get the container
+                        var container = document.getElementById('canvas');
+
+                        // Create the scene
+                        const scene = new THREE.Scene();
+                        scene.background = new THREE.Color( 0xffffff );
+                        // Create a camera, which determines what we'll see when we render the scene
+                        const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+
+                        // Create a renderer and attach it to our document
+                        const renderer = new THREE.WebGLRenderer({ antialias: true });
+                        renderer.setSize(container.clientWidth, container.clientHeight);
+                        renderer.shadowMap.enabled = true;
+                        container.appendChild(renderer.domElement);
+
+                        // Create voice type sections
+                        const geometry = new THREE.BoxGeometry(1, 0.01, 1);
+                        const materialModal = new THREE.MeshPhongMaterial({ color: 0xc5edd2, shininess: 0});
+                        const materialTenseMild = new THREE.MeshPhongMaterial({ color: 0xf3c2be, shininess: 0});
+                        const materialTenseSevere = new THREE.MeshPhongMaterial({ color: 0xed9591, shininess: 0});
+                        const materialBreathyMild = new THREE.MeshPhongMaterial({ color: 0xbcd1fe, shininess: 0});
+                        const materialBreathySevere = new THREE.MeshPhongMaterial({ color: 0x8db4ff, shininess: 0});
+                        const materialUnsure = new THREE.MeshPhongMaterial({ color: 0xdedede, shininess: 0});
+                        const colorOrder = [materialUnsure, materialTenseMild, materialTenseSevere, materialBreathyMild, materialModal, materialTenseMild, materialBreathySevere, materialBreathyMild, materialUnsure];
+                        for (const x of Array(3).keys()) {
+                            for (const y of Array(3).keys()) {
+                                console.log(x*3+y);
+                                const cube = new THREE.Mesh(geometry, colorOrder[x*3+y]);
+                                cube.position.set(0.5 + y, 0.5, 0.5 + x);
+                                cube.receiveShadow = true;
+                                scene.add(cube);
+                            }
+                        }
+                        // Create light
+                        //var ambientLight = new THREE.AmbientLight( 0xffffff );
+                        //scene.add(ambientLight);
+                        var lightUp = new THREE.DirectionalLight(0xffffff);
+                        lightUp.visible = true;
+                        lightUp.position.set(0, 4, 0);
+                        lightUp.target.position.set(0, 0, 0);
+                        lightUp.castShadow = true;
+                        scene.add(lightUp);
+                        var lightDown = new THREE.DirectionalLight(0xffffff);
+                        lightDown.visible = true;
+                        lightDown.position.set(0, -4, 0);
+                        lightDown.target.position.set(0, 0, 0);
+                        lightDown.castShadow = true;
+                        scene.add(lightDown);
+                        // Create a red dot (small sphere) at the origin
+                        const dotColor = yCoord >= 0.5 ? 0x00ff00 : 0xff0000;
+                        const dotGeometry = new THREE.SphereGeometry(0.05, 32, 32);
+                        const dotMaterial = new THREE.MeshBasicMaterial({ color: dotColor });
+                        const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+                        dot.castShadow = true;
+                        dot.position.set(xCoord, yCoord, zCoord);
+                        scene.add(dot);
+                        const cylGeometry = new THREE.CylinderGeometry( 0.05, 0.05, dot.position.y - 0.5, 32);
+                        const cylMaterial = new THREE.MeshBasicMaterial( {color: dotColor, transparent: true, opacity: 0.1} );
+                        const cylinder = new THREE.Mesh( cylGeometry, cylMaterial );
+                        cylinder.position.set(dot.position.x, (dot.position.y + 0.5) / 2, dot.position.z);
+                        scene.add( cylinder );
+                        const camX = xCoord >= 0.5 ? xCoord + 1 : xCoord - 1;
+                        const camY = yCoord >= 0.5 ? yCoord + 1 : yCoord - 1;
+                        const camZ = zCoord >= 0.5 ? zCoord + 1 : zCoord - 1;
+                        camera.position.set(camX, camY, camZ);
+                        camera.lookAt( dot.position );
+                        // Get the coordinates div
+                        const coordinatesDiv = document.getElementById('coordinates');
+
+                        // Raycaster for mouse interaction
+                        const raycaster = new THREE.Raycaster();
+                        const mouse = new THREE.Vector2();
+
+                        // Function to update mouse coordinates
+                        function onMouseMove(event) {
+                            const rect = container.getBoundingClientRect();
+                            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                        }
+
+                        window.addEventListener('mousemove', onMouseMove, false);
+
+                        // Add OrbitControls to allow mouse interaction
+                        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+                        controls.target.copy( dot.position );
+                        window.addEventListener('resize', () => {
+                            // Update renderer size
+                            renderer.setSize(container.clientWidth, container.clientHeight);
+                            // Update camera aspect ratio and projection matrix
+                            camera.aspect = container.clientWidth / container.clientHeight;
+                            camera.updateProjectionMatrix();
+                        });
+                        const details = document.getElementById('details');
+                        // Create the render loop
+                        function animate() {
+                            requestAnimationFrame(animate);
+
+                            // Update the controls
+                            controls.update();
+
+                            // Update raycaster
+                            raycaster.setFromCamera(mouse, camera);
+
+                            // Calculate objects intersecting the raycaster
+                            const intersects = raycaster.intersectObjects([dot]);
+
+                            if (intersects.length > 0) {
+                                // const intersectedBox = intersects[0].object;
+                                // const position = intersectedBox.position;
+                                details.style.opacity = "1";
+                            } else {
+                                details.style.opacity = "0";
+                            }
+
+
+                            renderer.render(scene, camera);
+                        }
+
+
+                        animate();
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+<!--    <div class="container">-->
+<!--        <div class="row center">-->
+<!--            <div class="col s12">-->
+<!--                <div class="card-panel white-text" style="background-color: #4f5e82;">-->
+<!--                    <h2 th:text="${disphonia}" th:style="'font-size: calc(3em + 2vw); color: '+${disphoniaColor}+';'">Peak Slope</h2>-->
+<!--                    <canvas id="myCanvas2" width="245" height="734" hidden></canvas>-->
+<!--                    <script>-->
+<!--                        const height_p2 = Number(document.getElementById('height-p2').innerHTML);-->
+<!--                        // const height_p2 = 0.75;-->
+<!--                        const canvas2 = document.getElementById('myCanvas2');-->
+<!--                        const context2 = canvas2.getContext('2d');-->
+<!--                        const image2 = new Image();-->
+<!--                        image2.src = '/img/wizualizacja2.jpg'; // Replace with the path to your image-->
+
+<!--                        function drawImage2() {-->
+
+<!--                            context2.drawImage(image2, 0, 0);-->
+<!--                            context2.strokeStyle = "#FF0000";-->
+<!--                            context2.lineWidth = 5;-->
+<!--                            context2.beginPath();-->
+<!--                            context2.moveTo(0, canvas2.height*height_p2);-->
+<!--                            context2.lineTo(245, canvas2.height*height_p2);-->
+<!--                            context2.stroke();-->
+<!--                        }-->
+<!--                        image2.onload = drawImage2; // Initial call to set canvas size and draw image-->
+
+<!--                        function getWizualizacja2(){-->
+<!--                            const canvas = document.getElementById('myCanvas2');-->
+<!--                            drawImage2();-->
+<!--                            var jpegUrl = canvas.toDataURL("image/jpeg");-->
+<!--                            return jpegUrl;-->
+<!--                        }-->
+<!--                    </script>-->
+<!--                    <img src="/img/wizualizacja2.jpg" onload="this.onload=null; this.src=getWizualizacja2();" alt="Wizualizacja dysfonii">-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+    <script>
+        console.log(document.getElementById("ps-value").innerHTML.replace(",", "."));
+        function redirectWithParam(key, value) {
+            const url = new URL(window.location.href.replace("upload", "result"));
+            url.searchParams.set(key, value);
+            if(window.location.href.includes("upload")){
+                url.searchParams.set("ps",document.getElementById("ps-value").innerHTML.replace(",", "."));
+                url.searchParams.set("cpp",document.getElementById("cpp-value").innerHTML.replace(",", "."));
+                url.searchParams.set("naq",document.getElementById("naq-value").innerHTML.replace(",", "."));
+            }
+            window.location.href = url.toString();
+        }
+    </script>
+</main>
+<footer class="page-footer blue darken-4">
+    <div class="container">
+        <div class="footer-copyright">
+            <div class="container">
+                <span th:text="#{copyright}"></span>
+                <a th:text="#{pjatk-link}" class="grey-text text-lighten-4 right" href="https://pja.edu.pl/"></a>
+            </div>
+        </div>
+    </div>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('.sidenav').sidenav();
+    });
+</script>
+</body>
+</html>

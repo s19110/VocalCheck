@@ -1,0 +1,207 @@
+=== USER ===
+How to calculate Cepstral Peak Prominence when analyzing a voice recording in Octave?
+=== ChatGPT ===
+To calculate **Cepstral Peak Prominence (CPP)** in **GNU Octave**, you can follow these general steps. CPP is a measure used in voice analysis to quantify the level of periodicity in a voice signal — often associated with voice quality, such as breathiness or hoarseness.
+
+### 🔧 Requirements
+
+Make sure you have Octave with the Signal package:
+
+```octave
+pkg install -forge signal
+pkg load signal
+```
+
+---
+
+### 📊 Step-by-Step Method to Calculate CPP
+
+#### 1. **Load the voice signal**
+
+```octave
+[x, fs] = audioread('voice.wav');
+x = x(:,1);  % Use mono channel if stereo
+```
+
+#### 2. **Pre-emphasis (optional)**
+
+Apply a high-pass filter to emphasize high frequencies:
+
+```octave
+preemph = filter([1 -0.97], 1, x);
+```
+
+#### 3. **Window the signal**
+
+Choose a segment or use a sliding window (e.g., 40 ms frame):
+
+```octave
+frame_size = round(0.04 * fs);  % 40 ms
+frame = preemph(1:frame_size) .* hamming(frame_size);
+```
+
+#### 4. **Compute the real cepstrum**
+
+```octave
+spectrum = abs(fft(frame));
+log_spectrum = log(spectrum + eps);
+cepstrum = real(ifft(log_spectrum));
+```
+
+#### 5. **Find the peak in the cepstrum**
+
+Define the range of possible pitch periods (e.g., 60 Hz to 300 Hz)
+
+```octave
+qmin = round(fs / 300);  % max pitch
+qmax = round(fs / 60);   % min pitch
+
+[peak_val, peak_idx] = max(cepstrum(qmin:qmax));
+true_peak_idx = peak_idx + qmin - 1;
+```
+
+#### 6. **Fit a regression line (or use liftering) to estimate the cepstral baseline**
+
+```octave
+% Fit linear regression to cepstrum values excluding the peak
+x_axis = (1:length(cepstrum))';
+baseline_range = setdiff(qmin:qmax, true_peak_idx);  % exclude the peak
+p = polyfit(x_axis(baseline_range), cepstrum(baseline_range), 1);
+baseline_val = polyval(p, true_peak_idx);
+```
+
+#### 7. **Calculate CPP**
+
+```octave
+CPP = peak_val - baseline_val;
+```
+
+---
+
+### 🧠 Interpretation
+
+* A **higher CPP** typically indicates a stronger periodic (voiced) component — clearer voice quality.
+* A **lower CPP** suggests breathiness, hoarseness, or other voice disorders.
+
+---
+
+### 🧪 Optional: Apply on multiple frames
+
+You can repeat this over sliding frames (e.g., 10 ms step size) for a full voice analysis.
+
+---
+
+Would you like me to help wrap this into a reusable Octave function?
+=== USER ===
+The output of the script is different from the COVAREP's implementation of the Cepstral Peak Prominence calculation algorithm. Please, take a look at the script at: https://github.com/covarep/covarep/blob/master/glottalsource/cpp.m and analyze what may be the cause of the output differences. If possible, adjust your code so that it matches COVAREP's calculations.
+=== ChatGPT ===
+The discrepancies between your initial Octave implementation of Cepstral Peak Prominence (CPP) and COVAREP's `cpp.m` function likely stem from several key differences in signal processing steps. COVAREP's implementation includes specific preprocessing, windowing, and normalization techniques that are crucial for accurate CPP calculation.
+
+**Key Differences Identified:**
+
+1. **Pre-emphasis Filter:**
+
+   * **COVAREP:** Applies a high-pass pre-emphasis filter with coefficients `[1, -0.97]` to enhance high-frequency components.
+   * **Your Implementation:** May have omitted or used different pre-emphasis filtering.([GitHub][1])
+
+2. **Windowing Function:**
+
+   * **COVAREP:** Utilizes a Hann window for framing the signal.
+   * **Your Implementation:** Used a Hamming window, which has different spectral properties.
+
+3. **Frame Parameters:**
+
+   * **COVAREP:** Employs a 40 ms frame length with a 10 ms frame shift.
+   * **Your Implementation:** Frame length and shift may differ, affecting temporal resolution.([GitHub][2])
+
+4. **Cepstrum Calculation:**
+
+   * **COVAREP:** Computes the log magnitude spectrum in decibels (`10 * log10`) before applying the FFT to obtain the cepstrum.
+   * **Your Implementation:** May have used the natural logarithm (`log`), leading to scale differences.
+
+5. **Normalization Method:**
+
+   * **COVAREP:** Offers options like 'mean' or 'line' for baseline estimation in CPP calculation.
+   * **Your Implementation:** Normalization approach may differ, impacting CPP values.([GitHub][2])
+
+**Adjusted Octave Implementation:**
+
+To align your Octave code with COVAREP's methodology, consider the following adjustments:
+
+```octave
+pkg load signal
+
+% Load the voice signal
+[x, fs] = audioread('voice.wav');
+x = x(:,1);  % Ensure mono channel
+
+% Apply pre-emphasis filter
+x = filter([1 -0.97], 1, x);
+
+% Define frame parameters
+frame_length = round(0.04 * fs);  % 40 ms
+frame_shift = round(0.01 * fs);   % 10 ms
+NFFT = 2^nextpow2(frame_length);
+num_frames = floor((length(x) - frame_length) / frame_shift) + 1;
+
+% Initialize CPP array
+CPP = zeros(num_frames, 1);
+
+% Define quefrency range corresponding to 50-500 Hz
+F0_min = 50;
+F0_max = 500;
+quef_min = round(fs / F0_max);
+quef_max = round(fs / F0_min);
+
+% Process each frame
+for i = 1:num_frames
+    start_idx = (i - 1) * frame_shift + 1;
+    frame = x(start_idx : start_idx + frame_length - 1);
+    
+    % Apply Hann window
+    windowed_frame = frame .* hann(frame_length);
+    
+    % Compute magnitude spectrum and convert to dB
+    spectrum = abs(fft(windowed_frame, NFFT));
+    spectrum_db = 10 * log10(spectrum + eps);
+    
+    % Compute real cepstrum
+    cepstrum = real(ifft(spectrum_db));
+    
+    % Extract relevant quefrency range
+    cepstrum_range = cepstrum(quef_min:quef_max);
+    
+    % Identify peak in cepstrum
+    [peak_val, peak_idx] = max(cepstrum_range);
+    true_peak_idx = peak_idx + quef_min - 1;
+    
+    % Estimate baseline using linear regression
+    quef_seq = (quef_min:quef_max)';
+    p = polyfit(quef_seq, cepstrum_range, 1);
+    baseline_val = polyval(p, true_peak_idx);
+    
+    % Calculate CPP
+    CPP(i) = peak_val - baseline_val;
+end
+
+% Optional: Plot CPP over time
+time_axis = ((0:num_frames - 1) * frame_shift + frame_length / 2) / fs;
+plot(time_axis, CPP);
+xlabel('Time (s)');
+ylabel('CPP (dB)');
+title('Cepstral Peak Prominence Over Time');
+```
+
+**Notes:**
+
+* Ensure that the sampling frequency (`fs`) is correctly set according to your audio file.
+* The `eps` term is added to avoid taking the logarithm of zero.
+* This script processes the entire signal frame by frame, aligning with COVAREP's approach.
+
+By incorporating these adjustments, your CPP calculations in Octave should closely match those obtained using COVAREP's `cpp.m` function.
+
+If you need further assistance or have additional questions, feel free to ask!
+
+[1]: https://github.com/covarep/covarep/issues/123?utm_source=chatgpt.com "A bunch of changes to cpp.m. #123 - GitHub"
+[2]: https://github.com/covarep/covarep/blob/master/glottalsource/cpp.m?utm_source=chatgpt.com "covarep/glottalsource/cpp.m at master - GitHub"
+

@@ -1,0 +1,221 @@
+=== USER ===
+How to calculate Cepstral Peak Prominence when analyzing a voice recording in Octave?
+=== COPILOT ===
+To calculate Cepstral Peak Prominence (CPP) in Octave, you can follow these steps:
+
+1. **Load the audio file**: First, read your voice recording into Octave.
+    ```octave
+    [y, fs] = audioread('your_audio_file.wav');
+    ```
+
+2. **Pre-process the signal**: Convert the signal to mono if it's stereo and normalize it.
+    ```octave
+    if size(y, 2) == 2
+        y = mean(y, 2);
+    end
+    y = y / max(abs(y));
+    ```
+
+3. **Compute the power cepstrum**: Use the Fourier Transform to compute the power cepstrum.
+    ```octave
+    N = length(y);
+    Y = fft(y);
+    log_spectrum = log(abs(Y) + eps);
+    cepstrum = ifft(log_spectrum);
+    power_cepstrum = abs(cepstrum).^2;
+    ```
+
+4. **Identify the peak in the cepstrum**: Find the peak in the cepstrum that corresponds to the fundamental frequency.
+    ```octave
+    quefrency = (0:N-1) / fs;
+    [peak_value, peak_index] = max(power_cepstrum);
+    peak_quefrency = quefrency(peak_index);
+    ```
+
+5. **Calculate CPP**: The CPP is the difference between the peak value and the baseline (average of the cepstrum excluding the peak).
+    ```octave
+    baseline = mean(power_cepstrum);
+    cpp = peak_value - baseline;
+    ```
+
+6. **Display the result**: Output the CPP value.
+    ```octave
+    fprintf('Cepstral Peak Prominence (CPP): %.2f dB\n', cpp);
+    ```
+
+This script will help you calculate the CPP for your voice recording. If you need more detailed analysis or customization, you might want to explore additional signal processing functions available in Octave or other specialized software[1](https://www.jamescurtisphd.me/tutorials/voice/cpp)[2](https://sites.temple.edu/vocaldevlab/files/2021/12/HellerMurray_CPP_selfarchived-2.pdf).
+
+Would you like more information on any of these steps?
+=== USER ===
+The output of the script is different from the COVAREP's implementation of the Cepstral Peak Prominence calculation algorithm. Please, take a look at the script at: https://github.com/covarep/covarep/blob/master/glottalsource/cpp.m and analyze what may be the cause of the output differences. If possible, adjust your code so that it matches COVAREP's calculations.
+=== COPILOT ===
+Sure, let's analyze the COVAREP implementation of the Cepstral Peak Prominence (CPP) calculation and adjust the Octave script accordingly.
+
+The COVAREP script includes several specific steps and options that might differ from the simpler version I provided. Here are some key points from the COVAREP script[1](https://github.com/covarep/covarep/blob/master/glottalsource/cpp.m):
+
+1. **High-pass Filtering**: The COVAREP script applies a high-pass filter to the signal.
+2. **Frame Length and Shift**: It uses specific frame lengths and shifts, which can be adjusted based on whether smoothing is applied.
+3. **Windowing**: It applies a Hann window to each frame.
+4. **Magnitude Spectrum**: It computes the magnitude spectrum and converts it to dB.
+5. **Log Cepstrum**: It calculates the log cepstrum, with an option to use a dB scale.
+6. **Smoothing**: It optionally smooths the cepstrum across time and quefrency.
+7. **Normalization**: It normalizes the cepstrum using either a regression line, mean, or no normalization.
+
+Here is an adjusted version of the Octave script to match the COVAREP implementation:
+
+```octave
+function CPP = calculate_cpp(x, fs, smoothOpt = 0, normOpt = 'mean', dBScaleOpt = 0)
+    % High-pass filter settings
+    HPfilt_b = [1 -0.97];
+    x = filter(HPfilt_b, 1, x);
+
+    % Frame settings
+    frameLength = round(0.04 * fs);
+    if smoothOpt
+        frameShift = round(0.002 * fs);
+        timeSmoothLen = 10;
+        quefSmoothLen = 10;
+    else
+        frameShift = round(0.01 * fs);
+    end
+    halfLen = round(frameLength / 2);
+    xLen = length(x);
+    frameLen = halfLen * 2 + 1;
+    NFFT = 2 ^ nextpow2(frameLen);
+    quef = linspace(0, frameLen / 1000, NFFT);
+    F0lim = [500, 50];
+    quefLim = round(fs ./ F0lim);
+    quefSeq = (quefLim(1):quefLim(2))';
+
+    % Frame matrix
+    time_samples = frameLength+1:frameShift:xLen-frameLength;
+    N = length(time_samples);
+    frameStart = time_samples - halfLen;
+    frameStop = time_samples + halfLen;
+    frameMat = zeros(NFFT, N);
+    for n = 1:N
+        frameMat(1:frameLen, n) = x(frameStart(n):frameStop(n));
+    end
+
+    % Apply Hann window
+    win = hanning(frameLen);
+    winMat = repmat(win, 1, N);
+    frameMat = frameMat(1:frameLen, :) .* winMat;
+
+    % Compute magnitude spectrum
+    SpecMat = abs(fft(frameMat));
+    SpecdB = 10 * log10(SpecMat.^2);
+
+    % Compute log cepstrum
+    if dBScaleOpt
+        Ceps = 10 * log10(abs(fft(SpecdB)).^2);
+    else
+        Ceps = log(abs(fft(SpecdB)).^2);
+    end
+
+    % Smoothing
+    if smoothOpt
+        timeFilter_b = ones(1, timeSmoothLen) / timeSmoothLen;
+        quefFilter_b = ones(1, quefSmoothLen) / quefSmoothLen;
+        Ceps = filter(timeFilter_b, 1, Ceps')';
+        Ceps = filter(quefFilter_b, 1, Ceps);
+    end
+
+    % Take quefrency range and compute max
+    CepsLim = Ceps(quefSeq, :);
+    [CepsMax, maxIdx] = max(CepsLim, [], 1);
+
+    % Normalization
+    CepsNorm = zeros(1, N);
+    if strcmp(normOpt, 'line')
+        for n = 1:N
+            p = polyfit(quefSeq, CepsLim(:, n), 1);
+            CepsNorm(n) = polyval(p, quefSeq(maxIdx(n)));
+        end
+    elseif strcmp(normOpt, 'nonorm') == 0
+        CepsNorm = mean(CepsLim, 1);
+    end
+
+    CPP = CepsMax - CepsNorm;
+    CPP = [CPP(:) time_samples(:)];
+end
+
+% Example usage
+[y, fs] = audioread('your_audio_file.wav');
+cpp_result = calculate_cpp(y, fs);
+fprintf('Cepstral Peak Prominence (CPP): %.2f dB\n', cpp_result);
+```
+
+This script should now be more aligned with the COVAREP implementation. Let me know if you need further adjustments or explanations!
+=== USER ===
+Can you adjust the code so that you can run it as a standalone script?
+=== COPILOT ===
+Sure! Here's the adjusted script that you can run as a standalone Octave script. Save this code in a file, for example, `calculate_cpp.m`, and then run it in Octave.
+
+```octave
+function calculate_cpp(filename)
+    % Load the audio file
+    [x, fs] = audioread(filename);
+
+    % High-pass filter settings
+    HPfilt_b = [1 -0.97];
+    x = filter(HPfilt_b, 1, x);
+
+    % Frame settings
+    frameLength = round(0.04 * fs);
+    frameShift = round(0.01 * fs);
+    halfLen = round(frameLength / 2);
+    xLen = length(x);
+    frameLen = halfLen * 2 + 1;
+    NFFT = 2 ^ nextpow2(frameLen);
+    quef = linspace(0, frameLen / 1000, NFFT);
+    F0lim = [500, 50];
+    quefLim = round(fs ./ F0lim);
+    quefSeq = (quefLim(1):quefLim(2))';
+
+    % Frame matrix
+    time_samples = frameLength+1:frameShift:xLen-frameLength;
+    N = length(time_samples);
+    frameStart = time_samples - halfLen;
+    frameStop = time_samples + halfLen;
+    frameMat = zeros(NFFT, N);
+    for n = 1:N
+        frameMat(1:frameLen, n) = x(frameStart(n):frameStop(n));
+    end
+
+    % Apply Hann window
+    win = hanning(frameLen);
+    winMat = repmat(win, 1, N);
+    frameMat = frameMat(1:frameLen, :) .* winMat;
+
+    % Compute magnitude spectrum
+    SpecMat = abs(fft(frameMat));
+    SpecdB = 10 * log10(SpecMat.^2);
+
+    % Compute log cepstrum
+    Ceps = log(abs(fft(SpecdB)).^2);
+
+    % Take quefrency range and compute max
+    CepsLim = Ceps(quefSeq, :);
+    [CepsMax, maxIdx] = max(CepsLim, [], 1);
+
+    % Normalization
+    CepsNorm = mean(CepsLim, 1);
+
+    CPP = CepsMax - CepsNorm;
+    CPP = [CPP(:) time_samples(:)];
+
+    % Display the result
+    fprintf('Cepstral Peak Prominence (CPP): %.2f dB\n', mean(CPP(:, 1)));
+end
+
+% Example usage
+calculate_cpp('your_audio_file.wav');
+```
+
+To run this script:
+1. Save the code in a file named `calculate_cpp.m`.
+2. Open Octave and navigate to the directory containing `calculate_cpp.m`.
+3. Run the script by typing `calculate_cpp('your_audio_file.wav');` in the Octave command window.
+
+This script will load your audio file, process it, and print the Cepstral Peak Prominence (CPP) value. Let me know if you need any further adjustments or explanations!
