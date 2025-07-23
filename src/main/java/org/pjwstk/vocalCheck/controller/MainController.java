@@ -53,7 +53,7 @@ public class MainController {
     private final OAuth2AuthorizedClientService clientService;
 
     private static final int PS_MIN=-35, PS_MAX=-19,
-            CPP_MIN=1164, CPP_MAX=1167,
+            CPP_MAX=1160,
             NAQ_MIN_M=12, NAQ_MAX_M=25,
             NAQ_MIN_F=14, NAQ_MAX_F=20;
     private static final double MIN_OK = 1, MAX_OK=2;
@@ -158,7 +158,7 @@ public class MainController {
                 final int NAQ_MAX = gender.equals("woman") ? NAQ_MAX_F : NAQ_MAX_M;
                 final int NAQ_MIN = gender.equals("woman") ? NAQ_MIN_F : NAQ_MIN_M;
                 model.addAttribute("vocalTestResults", Lists.reverse(vocalTestResults));
-                model.addAttribute("cppMin", (CPP_MIN / 100.0));
+                model.addAttribute("cppMax", (CPP_MAX / 100.0));
                 model.addAttribute("psMax", (PS_MAX / 100.0));
                 model.addAttribute("psMin", (PS_MIN / 100.0));
                 model.addAttribute("naqMax", (NAQ_MAX / 100.0));
@@ -261,8 +261,8 @@ public class MainController {
             verdict = "verdict-green";
             color = "#c5edd2";
         }
-        String disphonia = testResult.getCPPLong() < CPP_MIN ? "disphonia-no" : "disphonia-yes";
-        String disphoniaColor = testResult.getCPPLong() < CPP_MIN ? "#c5edd2" : "#f3c1be";
+        String disphonia = testResult.getCPPLong() < CPP_MAX ? "disphonia-no" : "disphonia-yes";
+        String disphoniaColor = testResult.getCPPLong() < CPP_MAX ? "#c5edd2" : "#f3c1be";
 
         model.addAttribute("verdict", verdict);
         model.addAttribute("vedictColor", color);

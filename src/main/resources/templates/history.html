@@ -50,7 +50,7 @@
             <tbody>
             <tr th:each="result: ${vocalTestResults}">
                 <td th:classappend="${result.ps.replace(',', '.')} > ${psMax}? 'breathy' : (${result.ps.replace(',', '.')} < ${psMin}? 'tense' : 'good')" th:text="${result.ps}"></td>
-                <td th:classappend="${result.cpp.replace(',', '.')} < ${cppMin}? 'good' : 'tense'" th:text="${result.cpp}"></td>
+                <td th:classappend="${result.cpp.replace(',', '.')} < ${cppMax}? 'good' : 'tense'" th:text="${result.cpp}"></td>
                 <td th:classappend="${result.naq.replace(',', '.')} > ${naqMax}? 'breathy' : (${result.naq.replace(',', '.')} < ${naqMin}? 'tense' : 'good')" th:text="${result.naq}"></td>
                 <td th:text="${result.date}"></td>
             </tr>
